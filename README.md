@@ -1,3 +1,3 @@
 Data Analysis Portfolio Projects
 
-1. Data Preparation Project
+1. Data Preparation Project - Involves data clean-up
