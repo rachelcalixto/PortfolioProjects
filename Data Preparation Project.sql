@@ -74,6 +74,54 @@ values ('997600','NCR, FOURTH DISTRICT');
 insert into FilipinoEmigrants..PROVINCE (province_code, province_name) 
 values ('0','OTHERS');
 
+update FilipinoEmigrants..MUNICIPALITY_RAW set id = '067900'
+where MUNICIPALITY = 'NOT REPORTED' and id = '071200' and total = 1;
+
+insert into FilipinoEmigrants..MUNICIPALITY (municipality_name, province_code) 
+values ('NOT REPORTED',	'067900');
+
+update FilipinoEmigrants..MUNICIPALITY_RAW set id = '097300'
+where MUNICIPALITY = 'NOT REPORTED' and id = '101300' and Y1989 = 2 and Y1991 = 2;
+
+update FilipinoEmigrants..MUNICIPALITY set province_code = '097300'
+where MUNICIPALITY_name = 'ZAMBOANGA CITY, (ZAMBOANGA DEL SUR)';
+
+insert into FilipinoEmigrants..MUNICIPALITY (municipality_name, province_code) 
+values ('NOT REPORTED',	'097300');
+
+update FilipinoEmigrants..MUNICIPALITY_RAW set id = '112400'
+where MUNICIPALITY = 'NOT REPORTED' and id = '112500' and Y1989 = 2 ;
+
+insert into FilipinoEmigrants..MUNICIPALITY (municipality_name, province_code) 
+values ('NOT REPORTED',	'112400');
+
+update FilipinoEmigrants..MUNICIPALITY_RAW
+set ID = '037100' where municipality = 'SUBIC, (ZAMBALES)';
+
+update FilipinoEmigrants..MUNICIPALITY_RAW
+set ID = '973600' 
+where municipalitye = 'MARANTAO, (LANAO DEL SUR)' or municipality ='MARAWI CITY';
+
+update FilipinoEmigrants..MUNICIPALITY_RAW
+set ID = '993900'
+WHERE municipality like '%NCR, FIRST DISTRICT%';
+
+update FilipinoEmigrants..MUNICIPALITY_RAW
+set ID = '997400'
+where municipality like '%SECOND DISTRICT%';
+
+update FilipinoEmigrants..MUNICIPALITY_RAW
+set ID = '997500'
+where municipality like '%THIRD DISTRICT%';
+
+update FilipinoEmigrants..MUNICIPALITY_RAW
+set ID = '997600'
+where municipality like '%FOURTH DISTRICT%';
+
+update FilipinoEmigrants..MUNICIPALITY_RAW set id = '101301' where municipality like '%(ZAMBOANGA SIBUGAY)';
+
+update FilipinoEmigrants..MUNICIPALITY_RAW set id = '097300' where municipality = 'ZAMBOANGA CITY, (ZAMBOANGA DEL SUR)';
+
 --Data validation
 
 -- assign new code for duplicate province_code
@@ -101,37 +149,33 @@ create table EMIGRANT
 	emigrant_count INT not null
 );
 
---transform column name to recognize values
-EXEC sp_rename 'MUNICIPALITY_RAW.1988','Y1988', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1990','Y1990', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1989','Y1989', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1991','Y1991', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1992','Y1992', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1993','Y1993', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1994','Y1994', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1995','Y1995', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1996','Y1996', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1997','Y1997', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1998','Y1998', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.1999','Y1999', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2000','Y2000', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2001','Y2001', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2002','Y2002', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2003','Y2003', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2004','Y2004', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2005','Y2005', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2006','Y2006', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2007','Y2007', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2008','Y2008', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2009','Y2009', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2010','Y2010', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2011','Y2011', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2012','Y2012', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2013','Y2013', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2014','Y2014', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2015','Y2015', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2016','Y2016', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2017','Y2017', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2018','Y2018', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2019','Y2019', 'COLUMN';
-EXEC sp_rename 'MUNICIPALITY_RAW.2020','Y2020', 'COLUMN';
+-- Create procedure to populate Emigrant Table
+declare @year as int = 1988;
+declare @col as char(5);
+DECLARE @sql as NVARCHAR(MAX);
+
+while @year <= 2020
+
+begin
+	set @col = 'Y' + cast(@year as varchar(4));
+	SET @sql = N'
+    INSERT INTO FilipinoEmigrants..EMIGRANT (municipality_id, emigrant_year, emigrant_count)
+    SELECT
+        mun.id,
+        ''' + CAST(@year AS VARCHAR(4)) + ''',
+        ' + QUOTENAME(@col) + N'
+    FROM FilipinoEmigrants..MUNICIPALITY_RAW mr
+	join FilipinoEmigrants..MUNICIPALITY mun on (mun.municipality_name = mr.municipality
+												and mun.province_code = mr.id)
+';
+
+EXEC sp_executesql
+    @sql OUTPUT;
+
+SET @year = @year + 1;
+	
+end;
+--
+
+-- Data sum validation
+select sum(emigrant_count) from emigrant;--2177920
